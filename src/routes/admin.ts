@@ -68,5 +68,10 @@ router.post(
   adminController.rejectWithdrawal,
 );
 
+// User Management
+router.get('/users', adminController.getAllUsers);
+router.delete('/users/:userId', adminController.deleteUser);
+router.post('/users/:userId/toggle-status', adminController.toggleUserStatus);
+
 export default router;
 

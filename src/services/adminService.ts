@@ -235,6 +235,68 @@ export class AdminService {
       totalPayoutProcessed,
     };
   }
+
+  // Get all users with their details
+  async getAllUsers() {
+    const db = getDB() as any;
+    const users = await db.collection('users').find({}).toArray();
+
+    const result = [];
+    for (const user of users) {
+      let profile = null;
+      if (user.role === 'BA') {
+        profile = await db.collection('baprofiles').findOne({ userId: user._id });
+      }
+      result.push({
+        ...user,
+        profile
+      });
+    }
+    return result;
+  }
+
+  // Delete user
+  async deleteUser(userId: string) {
+    const db = getDB() as any;
+
+    // Delete user
+    const userResult = await db.collection('users').findOneAndDelete({ _id: userId });
+
+    if (!userResult.value) {
+      throw new AppError(404, 'User not found');
+    }
+
+    // Delete related BA profile if exists
+    if (userResult.value.role === 'BA') {
+      await db.collection('baprofiles').deleteOne({ userId });
+    }
+
+    return { message: 'User deleted successfully', deletedUser: userResult.value };
+  }
+
+  // Toggle user active/inactive status
+  async toggleUserStatus(userId: string) {
+    const db = getDB() as any;
+
+    const user = await db.collection('users').findOne({ _id: userId });
+    if (!user) {
+      throw new AppError(404, 'User not found');
+    }
+
+    const newStatus = !user.isActive;
+    const result = await db.collection('users').findOneAndUpdate(
+      { _id: userId },
+      {
+        $set: {
+          isActive: newStatus,
+          updatedAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    );
+
+    return result.value;
+  }
 }
 
 export const adminService = new AdminService();

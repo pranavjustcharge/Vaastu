@@ -90,6 +90,36 @@ export const rejectWithdrawal = asyncHandler(async (req: Request, res: Response)
   res.status(200).json(withdrawal);
 });
 
+export const getAllUsers = asyncHandler(async (_req: Request, res: Response) => {
+  const users = await adminService.getAllUsers();
+  res.status(200).json({
+    success: true,
+    message: 'Users retrieved successfully',
+    data: users,
+    count: users.length
+  });
+});
+
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const result = await adminService.deleteUser(userId);
+  res.status(200).json({
+    success: true,
+    message: result.message,
+    data: result.deletedUser
+  });
+});
+
+export const toggleUserStatus = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const user = await adminService.toggleUserStatus(userId);
+  res.status(200).json({
+    success: true,
+    message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+    data: user
+  });
+});
+
 export const getDashboardStats = asyncHandler(async (_req: Request, res: Response) => {
   const stats = await adminService.getDashboardStats();
   res.status(200).json(stats);

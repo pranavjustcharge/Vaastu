@@ -127,6 +127,43 @@
             background: #e74c3c;
             color: white;
         }
+        .status-active {
+            background: #27ae60;
+            color: white;
+        }
+        .status-inactive {
+            background: #95a5a6;
+            color: white;
+        }
+        .status-confirmed {
+            background: #3498db;
+            color: white;
+        }
+        .status-completed {
+            background: #27ae60;
+            color: white;
+        }
+        .status-cancelled {
+            background: #e74c3c;
+            color: white;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+        }
+        .btn-info {
+            background: #3498db;
+            color: white;
+        }
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
         .loading {
             text-align: center;
             padding: 20px;
@@ -228,8 +265,14 @@
 
         <!-- Recent Bookings Section -->
         <div class="section">
-            <h2>Recent Bookings</h2>
+            <h2>All Bookings <span id="totalBookingsCount" style="font-size: 0.8em; color: #666;"></span></h2>
             <div id="bookingsTable" class="loading">Loading...</div>
+        </div>
+
+        <!-- User Management Section -->
+        <div class="section">
+            <h2>User Management</h2>
+            <div id="usersTable" class="loading">Loading...</div>
         </div>
 
         <!-- Pending Withdrawals Section -->
@@ -391,10 +434,10 @@
             }
         }
 
-        // Fetch recent bookings
+        // Fetch all bookings
         async function loadBookings() {
             try {
-                const response = await fetch(`${API_BASE_URL}/bookings`, {
+                const response = await fetch(`${API_BASE_URL}/bookings/admin/all`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 const data = await response.json();
@@ -404,14 +447,19 @@
 
                 if (!bookings || bookings.length === 0) {
                     document.getElementById('bookingsTable').innerHTML = '<p>No bookings yet</p>';
+                    document.getElementById('totalBookingsCount').textContent = '(0 total)';
                     return;
                 }
 
-                let html = '<table><thead><tr><th>Client</th><th>Service</th><th>Date</th><th>Status</th></tr></thead><tbody>';
-                bookings.slice(0, 5).forEach(booking => {
+                // Update total count
+                document.getElementById('totalBookingsCount').textContent = `(${bookings.length} total)`;
+
+                let html = '<table><thead><tr><th>Client</th><th>Email</th><th>Service</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+                bookings.forEach(booking => {
                     const statusClass = `status-${booking.status.toLowerCase()}`;
                     html += `<tr>
                         <td>${booking.clientName}</td>
+                        <td>${booking.clientEmail}</td>
                         <td>${booking.serviceType}</td>
                         <td>${new Date(booking.bookingDate).toLocaleDateString()}</td>
                         <td><span class="status-badge ${statusClass}">${booking.status}</span></td>
@@ -422,6 +470,49 @@
             } catch (error) {
                 console.error('Error loading bookings:', error);
                 document.getElementById('bookingsTable').innerHTML = '<p>Error loading data</p>';
+            }
+        }
+
+        // Fetch all users for management
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                // Handle both wrapped and unwrapped response formats
+                const users = data.data || data;
+
+                if (!users || users.length === 0) {
+                    document.getElementById('usersTable').innerHTML = '<p>No users found</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                users.forEach(user => {
+                    const statusBadge = user.isActive
+                        ? '<span class="status-badge status-active">Active</span>'
+                        : '<span class="status-badge status-inactive">Inactive</span>';
+                    const toggleBtnText = user.isActive ? 'Deactivate' : 'Activate';
+                    const toggleBtnClass = user.isActive ? 'btn-warning' : 'btn-info';
+
+                    html += `<tr>
+                        <td>${user.firstName} ${user.lastName}</td>
+                        <td>${user.email}</td>
+                        <td><span class="badge">${user.role}</span></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn ${toggleBtnClass}" onclick="toggleUserStatus('${user._id}', '${user.email}')">${toggleBtnText}</button>
+                            <button class="btn btn-danger" onclick="deleteUser('${user._id}', '${user.email}')">Remove</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('usersTable').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTable').innerHTML = '<p>Error loading data</p>';
             }
         }
 
@@ -537,6 +628,56 @@
             }
         }
 
+        // Toggle user status (active/inactive)
+        async function toggleUserStatus(userId, userEmail) {
+            if (!confirm(`Are you sure you want to toggle the status for ${userEmail}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-status`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const status = result.data.isActive ? 'activated' : 'deactivated';
+                    toaster.success(`User ${status} successfully`);
+                    loadUsers();
+                } else {
+                    toaster.error('Error toggling user status. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error toggling user status:', error);
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Delete user
+        async function deleteUser(userId, userEmail) {
+            if (!confirm(`Are you sure you want to permanently delete ${userEmail}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    toaster.success('User deleted successfully');
+                    loadUsers();
+                } else {
+                    toaster.error('Error deleting user. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
         // Load commission settings
         async function loadCommissionSettings() {
             try {
@@ -648,6 +789,7 @@
             loadDashboardStats();
             loadPendingBAs();
             loadBookings();
+            loadUsers();
             loadWithdrawals();
             loadCommissionSettings();
 
@@ -656,6 +798,7 @@
                 loadDashboardStats();
                 loadPendingBAs();
                 loadBookings();
+                loadUsers();
                 loadWithdrawals();
             }, 30000);
         }

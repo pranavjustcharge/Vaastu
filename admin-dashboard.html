@@ -473,8 +473,13 @@
             }
         }
 
+        // Pagination state
+        let allUsers = [];
+        let currentUserPage = 1;
+        const usersPerPage = 25;
+
         // Fetch all users for management
-        async function loadUsers() {
+        async function loadUsers(page = 1) {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -482,15 +487,21 @@
                 const data = await response.json();
 
                 // Handle both wrapped and unwrapped response formats
-                const users = data.data || data;
+                allUsers = data.data || data;
 
-                if (!users || users.length === 0) {
+                if (!allUsers || allUsers.length === 0) {
                     document.getElementById('usersTable').innerHTML = '<p>No users found</p>';
                     return;
                 }
 
+                // Calculate pagination
+                const totalPages = Math.ceil(allUsers.length / usersPerPage);
+                const startIndex = (page - 1) * usersPerPage;
+                const endIndex = startIndex + usersPerPage;
+                const paginatedUsers = allUsers.slice(startIndex, endIndex);
+
                 let html = '<table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-                users.forEach(user => {
+                paginatedUsers.forEach(user => {
                     const statusBadge = user.isActive
                         ? '<span class="status-badge status-active">Active</span>'
                         : '<span class="status-badge status-inactive">Inactive</span>';
@@ -509,7 +520,36 @@
                     </tr>`;
                 });
                 html += '</tbody></table>';
+
+                // Add pagination controls
+                if (totalPages > 1) {
+                    html += '<div class="pagination" style="margin-top: 20px; text-align: center;">';
+
+                    // Previous button
+                    if (page > 1) {
+                        html += `<button class="btn btn-primary" onclick="loadUsers(${page - 1})" style="margin: 0 5px;">← Previous</button>`;
+                    }
+
+                    // Page numbers
+                    for (let i = 1; i <= totalPages; i++) {
+                        if (i === page) {
+                            html += `<button class="btn" style="background: #667eea; color: white; margin: 0 3px; cursor: default;">${i}</button>`;
+                        } else {
+                            html += `<button class="btn btn-primary" onclick="loadUsers(${i})" style="margin: 0 3px;">${i}</button>`;
+                        }
+                    }
+
+                    // Next button
+                    if (page < totalPages) {
+                        html += `<button class="btn btn-primary" onclick="loadUsers(${page + 1})" style="margin: 0 5px;">Next →</button>`;
+                    }
+
+                    html += `</div>`;
+                    html += `<p style="text-align: center; color: #666; margin-top: 10px;">Page ${page} of ${totalPages} (${allUsers.length} total users)</p>`;
+                }
+
                 document.getElementById('usersTable').innerHTML = html;
+                currentUserPage = page;
             } catch (error) {
                 console.error('Error loading users:', error);
                 document.getElementById('usersTable').innerHTML = '<p>Error loading data</p>';
@@ -644,7 +684,8 @@
                     const result = await response.json();
                     const status = result.data.isActive ? 'activated' : 'deactivated';
                     toaster.success(`User ${status} successfully`);
-                    loadUsers();
+                    // Reload users immediately without page refresh
+                    loadUsers(currentUserPage);
                 } else {
                     toaster.error('Error toggling user status. Please try again.');
                 }
@@ -668,7 +709,11 @@
 
                 if (response.ok) {
                     toaster.success('User deleted successfully');
-                    loadUsers();
+                    // Reload users immediately without page refresh
+                    // If current page becomes empty, go to previous page
+                    const totalPages = Math.ceil((allUsers.length - 1) / usersPerPage);
+                    const pageToLoad = currentUserPage > totalPages && totalPages > 0 ? totalPages : currentUserPage;
+                    loadUsers(pageToLoad);
                 } else {
                     toaster.error('Error deleting user. Please try again.');
                 }

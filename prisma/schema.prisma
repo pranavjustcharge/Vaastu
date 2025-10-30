@@ -1,0 +1,275 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+  // Disable transactions for local MongoDB (requires replica set)
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  BA
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CouponStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum ServiceType {
+  BUSINESS_VASTU
+  RESIDENTIAL_VASTU
+  HEALING_SESSION
+  LAND_ENERGY
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+// User model - base for both Admin and BA
+model User {
+  id                String    @id @default(cuid()) @map("_id")
+  email             String    @unique
+  password          String
+  role              UserRole
+  firstName         String?
+  lastName          String?
+  phone             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  baProfile         BAProfile?
+  referralCodes     ReferralCode[]
+  referralTransactions ReferralTransaction[] @relation("referrer")
+  withdrawalRequests WithdrawalRequest[]
+  couponsAssigned   CouponAssignment[]
+
+  @@index([role])
+}
+
+// BA Profile - extended info for Business Associates
+model BAProfile {
+  id                String    @id @default(cuid()) @map("_id")
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Personal Details
+  companyName       String?
+  gstNumber         String?
+
+  // Bank Details
+  bankName          String?
+  accountNumber     String?
+  ifscCode          String?
+  accountHolderName String?
+
+  // KYC
+  kycStatus         KYCStatus @default(PENDING)
+  kycDocumentUrl    String?
+  kycSubmittedAt    DateTime?
+  kycApprovedAt     DateTime?
+
+  // Stats
+  totalEarnings     Float     @default(0)
+  pendingEarnings   Float     @default(0)
+  approvedEarnings  Float     @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([kycStatus])
+}
+
+// Referral Code - auto-generated for each BA
+model ReferralCode {
+  id                String    @id @default(cuid()) @map("_id")
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  code              String    @unique
+  referralLink      String    @unique
+  isActive          Boolean   @default(true)
+
+  totalReferrals    Int       @default(0)
+  successfulConversions Int   @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// Referral Transaction - tracks each referral
+model ReferralTransaction {
+  id                String    @id @default(cuid()) @map("_id")
+  referrerId        String
+  referrer          User      @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  
+  referralCode      String
+  customerEmail     String
+  
+  commissionAmount  Float
+  commissionType    String    // "PERCENTAGE" or "FIXED"
+  commissionValue   Float     // percentage or fixed amount
+  
+  status            String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([status])
+}
+
+// Commission Settings - global or per-BA
+model CommissionSetting {
+  id                String    @id @default(cuid()) @map("_id")
+
+  baId              String?   // null = global setting
+
+  commissionType    String    // "PERCENTAGE" or "FIXED"
+  commissionValue   Float     // percentage or fixed amount
+
+  isActive          Boolean   @default(true)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([baId])
+}
+
+// Coupon Code - managed by admin
+model CouponCode {
+  id                String    @id @default(cuid()) @map("_id")
+
+  code              String    @unique
+  discountPercentage Float
+  discountAmount    Float?
+
+  status            CouponStatus @default(ACTIVE)
+
+  globalUsageLimit  Int?      // null = unlimited
+  globalUsageCount  Int       @default(0)
+
+  expiryDate        DateTime?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  assignments       CouponAssignment[]
+
+  @@index([status])
+}
+
+// Coupon Assignment - assign coupons to specific BAs
+model CouponAssignment {
+  id                String    @id @default(cuid()) @map("_id")
+  
+  couponId          String
+  coupon            CouponCode @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  
+  baId              String
+  ba                User      @relation(fields: [baId], references: [id], onDelete: Cascade)
+  
+  perUserUsageLimit Int?      // null = unlimited
+  usageCount        Int       @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([couponId, baId])
+  @@index([couponId])
+  @@index([baId])
+}
+
+// Withdrawal Request - BA requests withdrawal
+model WithdrawalRequest {
+  id                String    @id @default(cuid()) @map("_id")
+
+  baId              String
+  ba                User      @relation(fields: [baId], references: [id], onDelete: Cascade)
+
+  amount            Float
+  status            WithdrawalStatus @default(PENDING)
+
+  requestedAt       DateTime  @default(now())
+  approvedAt        DateTime?
+  completedAt       DateTime?
+
+  adminNotes        String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([baId])
+  @@index([status])
+}
+
+// Booking - Service bookings from clients
+model Booking {
+  id                String    @id @default(cuid()) @map("_id")
+
+  // Client Info
+  clientName        String
+  clientEmail       String
+  clientPhone       String
+
+  // Service Details
+  serviceType       ServiceType
+  description       String?
+
+  // Booking Details
+  preferredDate     DateTime
+  preferredTime     String    // e.g., "09:00 AM"
+
+  // Referral Info
+  referralCode      String?   // if booked via BA referral
+  referrerId        String?   // BA who referred this booking
+
+  // Coupon Info
+  couponCode        String?
+  discountApplied   Float     @default(0)
+
+  // Status
+  status            BookingStatus @default(PENDING)
+
+  // Notes
+  adminNotes        String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([clientEmail])
+  @@index([serviceType])
+  @@index([status])
+  @@index([referralCode])
+  @@index([preferredDate])
+}
+

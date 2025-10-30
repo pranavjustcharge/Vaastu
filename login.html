@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Vaidik Vastu</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.css">
+    <link href="assets/css/font.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css"/>
+    <link rel="shortcut icon" href="assets/images/vastu_logo.png" type="image/x-icon">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-box h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .success-message {
+            color: #27ae60;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .demo-creds {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+        .demo-creds strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h2>🔐 Vaidik Vastu Login</h2>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginInput">Email or Username</label>
+                    <input
+                        type="text"
+                        id="loginInput"
+                        name="loginInput"
+                        placeholder="admin@example.com or username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">Login</button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Logging in...</p>
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+            </form>
+
+            <div class="demo-creds">
+                <strong>Demo Credentials:</strong>
+                Email: admin@example.com<br>
+                Password: ChangeMe123!
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/config.js"></script>
+    <script>
+        // Helper function to show messages
+        const showMessage = (message, type = 'info') => {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            if (typeof toaster !== 'undefined' && toaster) {
+                if (type === 'error') {
+                    toaster.error(message);
+                } else if (type === 'success') {
+                    toaster.success(message);
+                } else {
+                    toaster.info(message);
+                }
+            } else {
+                alert(message);
+            }
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const loginInput = document.getElementById('loginInput').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            // Clear messages
+            errorMessage.textContent = '';
+            successMessage.textContent = '';
+
+            // Show loading
+            loginBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                // Determine if input is email or username
+                const isEmail = loginInput.includes('@');
+                const loginData = isEmail
+                    ? { email: loginInput, password }
+                    : { username: loginInput, password };
+
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+                console.log('Response status:', response.status);
+                console.log('Response data:', JSON.stringify(data, null, 2));
+
+                if (!response.ok) {
+                    let errorMsg = 'Login failed';
+
+                    if (response.status === 401) {
+                        errorMsg = 'Invalid email/username or password. Please try again.';
+                    } else if (response.status === 403) {
+                        errorMsg = 'Your account is pending admin approval. Please wait for approval to login.';
+                    } else if (response.status === 400) {
+                        errorMsg = data.error || 'Please enter valid credentials.';
+                    } else if (response.status === 500) {
+                        errorMsg = 'Server error. Please try again later.';
+                    } else {
+                        errorMsg = data.error || errorMsg;
+                    }
+
+                    showMessage(errorMsg, 'error');
+                    throw new Error(errorMsg);
+                }
+
+                // Store tokens and user info
+                console.log('Login response:', JSON.stringify(data, null, 2));
+                console.log('User object:', JSON.stringify(data.user, null, 2));
+                console.log('User role:', data.user?.role);
+
+                if (!data.token || !data.user) {
+                    showMessage('Invalid login response from server', 'error');
+                    throw new Error('Invalid login response');
+                }
+
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('refreshToken', data.refreshToken);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                showMessage('Login successful! Redirecting...', 'success');
+
+                // Redirect based on role
+                const userRole = data.user?.role;
+                console.log('Redirecting based on role:', userRole);
+
+                setTimeout(() => {
+                    if (userRole === 'ADMIN') {
+                        console.log('Redirecting to admin dashboard');
+                        window.location.href = '/admin-dashboard.html';
+                    } else if (userRole === 'BA') {
+                        console.log('Redirecting to BA dashboard');
+                        window.location.href = '/ba-dashboard.html';
+                    } else {
+                        console.log('Unknown role:', userRole);
+                        showMessage('Unknown user role. Please contact support.', 'error');
+                    }
+                }, 1000);
+
+            } catch (error) {
+                // Error already shown via showMessage
+            } finally {
+                loginBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // Check if already logged in
+        if (localStorage.getItem('authToken')) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user.role === 'ADMIN') {
+                window.location.href = '/admin-dashboard.html';
+            } else {
+                window.location.href = '/ba-dashboard.html';
+            }
+        }
+    </script>
+    <script src="toaster.js"></script>
+</body>
+</html>
+

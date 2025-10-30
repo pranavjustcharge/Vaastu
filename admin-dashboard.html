@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Vaidik Vastu</title>
+    <link rel="stylesheet" href="assets/css/bootstrap.css">
+    <link href="assets/css/font.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css"/>
+    <link rel="shortcut icon" href="assets/images/vastu_logo.png" type="image/x-icon">
+    <script src="toaster.js"></script>
+    <style>
+        body {
+            background: #f5f5f5;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .logout-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .container-main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .stat-card h3 {
+            color: #667eea;
+            font-size: 32px;
+            margin: 10px 0;
+        }
+        .stat-card p {
+            color: #666;
+            margin: 0;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th {
+            background: #f0f0f0;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #f39c12;
+            color: white;
+        }
+        .status-approved {
+            background: #27ae60;
+            color: white;
+        }
+        .status-rejected {
+            background: #e74c3c;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .commission-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+        }
+        .commission-info h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+        .commission-info p {
+            margin: 5px 0;
+            color: #555;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🏛️ Admin Dashboard</h1>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="container-main">
+        <!-- Stats -->
+        <div class="dashboard-grid" id="statsGrid">
+            <div class="stat-card">
+                <p>Total Bookings</p>
+                <h3 id="totalBookings">-</h3>
+            </div>
+            <div class="stat-card">
+                <p>Pending BAs</p>
+                <h3 id="pendingBAs">-</h3>
+            </div>
+            <div class="stat-card">
+                <p>Total Revenue</p>
+                <h3 id="totalRevenue">-</h3>
+            </div>
+            <div class="stat-card">
+                <p>Pending Withdrawals</p>
+                <h3 id="pendingWithdrawals">-</h3>
+            </div>
+        </div>
+
+        <!-- Pending BAs Section -->
+        <div class="section">
+            <h2>Pending BA Approvals</h2>
+            <div id="pendingBAsTable" class="loading">Loading...</div>
+        </div>
+
+        <!-- Recent Bookings Section -->
+        <div class="section">
+            <h2>Recent Bookings</h2>
+            <div id="bookingsTable" class="loading">Loading...</div>
+        </div>
+
+        <!-- Pending Withdrawals Section -->
+        <div class="section">
+            <h2>Pending Withdrawal Requests</h2>
+            <div id="withdrawalsTable" class="loading">Loading...</div>
+        </div>
+
+        <!-- Commission Settings Section -->
+        <div class="section">
+            <h2>⚙️ Commission Settings</h2>
+
+            <div class="commission-info">
+                <h4>Current Commission Structure</h4>
+                <p id="commissionDisplay">Loading...</p>
+            </div>
+
+            <form id="commissionForm" onsubmit="updateCommissionSettings(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="commissionType">Commission Type *</label>
+                        <select id="commissionType" name="commissionType" required onchange="updateCommissionTypeDisplay()">
+                            <option value="">Select commission type</option>
+                            <option value="PERCENTAGE">Percentage (%)</option>
+                            <option value="FIXED">Fixed Amount (₹)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="commissionValue">Commission Value *</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="number" id="commissionValue" name="commissionValue" required min="0" max="100" placeholder="Enter value" step="0.01">
+                            <span id="commissionUnit" style="padding: 10px; background: #f0f0f0; border-radius: 5px; min-width: 40px; text-align: center;">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gstPercentage">GST Percentage (%)</label>
+                        <input type="number" id="gstPercentage" name="gstPercentage" min="0" max="100" placeholder="e.g., 18" step="0.01" value="18">
+                    </div>
+
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="excludeGSTFromBase" name="excludeGSTFromBase" checked>
+                            <label for="excludeGSTFromBase" style="margin: 0;">Exclude GST from base commission</label>
+                        </div>
+                        <small style="color: #999; display: block; margin-top: 5px;">If checked, GST is calculated on top of commission</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Save Settings</button>
+                    <button type="button" class="btn btn-danger" onclick="resetCommissionForm()">↻ Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="assets/js/config.js"></script>
+    <script>
+        const authToken = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        // Check authentication
+        if (!authToken || user.role !== 'ADMIN') {
+            window.location.href = '/login.html';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+
+        // Fetch dashboard stats
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                // Handle both wrapped and unwrapped response formats
+                const stats = data.data || data;
+
+                document.getElementById('totalBookings').textContent = stats.totalBAs || 0;
+                document.getElementById('pendingBAs').textContent = stats.pendingKYC || 0;
+                document.getElementById('totalRevenue').textContent = `₹${stats.totalPayoutProcessed || 0}`;
+                document.getElementById('pendingWithdrawals').textContent = stats.pendingWithdrawals || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Fetch pending BAs
+        async function loadPendingBAs() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/pending-bas`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                // Handle both wrapped and unwrapped response formats
+                const bas = data.data || data;
+
+                if (!bas || bas.length === 0) {
+                    document.getElementById('pendingBAsTable').innerHTML = '<p>No pending BAs</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Expertise</th><th>Experience</th><th>Actions</th></tr></thead><tbody>';
+                bas.forEach(ba => {
+                    const profile = ba.baProfile || {};
+                    html += `<tr>
+                        <td>${ba.firstName} ${ba.lastName}</td>
+                        <td>${ba.email}</td>
+                        <td>${ba.phone || profile.phone || 'N/A'}</td>
+                        <td>${profile.expertise || '-'}</td>
+                        <td>${profile.experience || '-'} years</td>
+                        <td>
+                            <button class="btn btn-success" onclick="approveBА('${ba._id}')">Approve</button>
+                            <button class="btn btn-danger" onclick="rejectBA('${ba._id}')">Reject</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('pendingBAsTable').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading pending BAs:', error);
+                document.getElementById('pendingBAsTable').innerHTML = '<p>Error loading data</p>';
+            }
+        }
+
+        // Fetch recent bookings
+        async function loadBookings() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/bookings`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                // Handle both wrapped and unwrapped response formats
+                const bookings = data.data || data;
+
+                if (!bookings || bookings.length === 0) {
+                    document.getElementById('bookingsTable').innerHTML = '<p>No bookings yet</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>Client</th><th>Service</th><th>Date</th><th>Status</th></tr></thead><tbody>';
+                bookings.slice(0, 5).forEach(booking => {
+                    const statusClass = `status-${booking.status.toLowerCase()}`;
+                    html += `<tr>
+                        <td>${booking.clientName}</td>
+                        <td>${booking.serviceType}</td>
+                        <td>${new Date(booking.bookingDate).toLocaleDateString()}</td>
+                        <td><span class="status-badge ${statusClass}">${booking.status}</span></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('bookingsTable').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('bookingsTable').innerHTML = '<p>Error loading data</p>';
+            }
+        }
+
+        // Fetch pending withdrawals
+        async function loadWithdrawals() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/pending-withdrawals`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await response.json();
+
+                // Handle both wrapped and unwrapped response formats
+                const withdrawals = data.data || data;
+
+                if (!withdrawals || withdrawals.length === 0) {
+                    document.getElementById('withdrawalsTable').innerHTML = '<p>No pending withdrawals</p>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>BA</th><th>Amount</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+                withdrawals.forEach(withdrawal => {
+                    html += `<tr>
+                        <td>${withdrawal.baId}</td>
+                        <td>₹${withdrawal.amount}</td>
+                        <td>${new Date(withdrawal.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-success" onclick="approveWithdrawal('${withdrawal._id}')">Approve</button>
+                            <button class="btn btn-danger" onclick="rejectWithdrawal('${withdrawal._id}')">Reject</button>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                document.getElementById('withdrawalsTable').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading withdrawals:', error);
+                document.getElementById('withdrawalsTable').innerHTML = '<p>Error loading data</p>';
+            }
+        }
+
+        // Approve BA
+        async function approveBА(baId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/approve-ba/${baId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    toaster.success('BA approved successfully');
+                    loadPendingBAs();
+                } else {
+                    toaster.error('Error approving BA. Please try again.');
+                }
+            } catch (error) {
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Reject BA
+        async function rejectBA(baId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/reject-ba/${baId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    toaster.success('BA rejected successfully');
+                    loadPendingBAs();
+                } else {
+                    toaster.error('Error rejecting BA. Please try again.');
+                }
+            } catch (error) {
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Approve withdrawal
+        async function approveWithdrawal(withdrawalId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/approve-withdrawal/${withdrawalId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    toaster.success('Withdrawal approved successfully');
+                    loadWithdrawals();
+                } else {
+                    toaster.error('Error approving withdrawal. Please try again.');
+                }
+            } catch (error) {
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Reject withdrawal
+        async function rejectWithdrawal(withdrawalId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/reject-withdrawal/${withdrawalId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    toaster.success('Withdrawal rejected successfully');
+                    loadWithdrawals();
+                } else {
+                    toaster.error('Error rejecting withdrawal. Please try again.');
+                }
+            } catch (error) {
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Load commission settings
+        async function loadCommissionSettings() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/commission/settings`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const result = await response.json();
+                const settings = result.data;
+
+                // Populate form
+                document.getElementById('commissionType').value = settings.commissionType;
+                document.getElementById('commissionValue').value = settings.commissionValue;
+                document.getElementById('gstPercentage').value = settings.gstPercentage;
+                document.getElementById('excludeGSTFromBase').checked = settings.excludeGSTFromBase;
+
+                updateCommissionTypeDisplay();
+                displayCommissionInfo(settings);
+            } catch (error) {
+                console.error('Error loading commission settings:', error);
+                toaster.error('Failed to load commission settings');
+            }
+        }
+
+        // Update commission type display
+        function updateCommissionTypeDisplay() {
+            const type = document.getElementById('commissionType').value;
+            const unit = document.getElementById('commissionUnit');
+            const input = document.getElementById('commissionValue');
+
+            if (type === 'PERCENTAGE') {
+                unit.textContent = '%';
+                input.max = '100';
+                input.placeholder = 'Enter percentage (0-100)';
+            } else if (type === 'FIXED') {
+                unit.textContent = '₹';
+                input.max = '999999999';
+                input.placeholder = 'Enter amount in rupees';
+            }
+        }
+
+        // Display current commission info
+        function displayCommissionInfo(settings) {
+            let description = '';
+            if (settings.commissionType === 'PERCENTAGE') {
+                description = `<strong>${settings.commissionValue}%</strong> of booking value`;
+            } else {
+                description = `<strong>₹${settings.commissionValue.toLocaleString('en-IN')}</strong> per successful referral`;
+            }
+
+            const gstInfo = settings.excludeGSTFromBase
+                ? `GST (${settings.gstPercentage}%) is calculated on top of commission`
+                : `GST (${settings.gstPercentage}%) is included in the commission`;
+
+            document.getElementById('commissionDisplay').innerHTML =
+                `${description}<br><small style="color: #666;">${gstInfo}</small>`;
+        }
+
+        // Update commission settings
+        async function updateCommissionSettings(event) {
+            event.preventDefault();
+
+            const commissionType = document.getElementById('commissionType').value;
+            const commissionValue = parseFloat(document.getElementById('commissionValue').value);
+            const gstPercentage = parseFloat(document.getElementById('gstPercentage').value);
+            const excludeGSTFromBase = document.getElementById('excludeGSTFromBase').checked;
+
+            if (!commissionType || isNaN(commissionValue)) {
+                toaster.error('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/commission/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        commissionType,
+                        commissionValue,
+                        gstPercentage,
+                        excludeGSTFromBase
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    toaster.success('Commission settings updated successfully');
+                    displayCommissionInfo(result.data);
+                } else {
+                    toaster.error(result.error || 'Failed to update commission settings');
+                }
+            } catch (error) {
+                console.error('Error updating commission settings:', error);
+                toaster.error('Network error. Please try again.');
+            }
+        }
+
+        // Reset commission form
+        function resetCommissionForm() {
+            loadCommissionSettings();
+        }
+
+        // Load all data on page load
+        loadDashboardStats();
+        loadPendingBAs();
+        loadBookings();
+        loadWithdrawals();
+        loadCommissionSettings();
+
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadDashboardStats();
+            loadPendingBAs();
+            loadBookings();
+            loadWithdrawals();
+        }, 30000);
+    </script>
+</body>
+</html>
+

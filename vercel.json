@@ -4,7 +4,6 @@
   "public": true,
   "buildCommand": "echo 'Frontend is static HTML'",
   "outputDirectory": ".",
-  "framework": "static",
   "env": {
     "REACT_APP_API_URL": "https://vastu-backend.onrender.com/api"
   },

@@ -1,6 +1,7 @@
 import { getDB } from '../utils/db';
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../middleware/errorHandler';
+import { config } from '../config/env';
 
 export class BAService {
   async createProfile(baId: string, data: any) {
@@ -172,7 +173,7 @@ export class BAService {
 
     return {
       referralCode: profile.referralCode,
-      referralLink: `http://localhost:5000/business_associate.html?ref=${profile.referralCode}`,
+      referralLink: `${config.frontendUrl}/business_associate.html?ref=${profile.referralCode}`,
       totalReferrals: profile.referredCount || 0,
       referredBAs: referredBAsWithDetails,
     };

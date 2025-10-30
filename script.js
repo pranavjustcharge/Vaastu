@@ -1,5 +1,24 @@
-// API Configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+// API Configuration - Use config.js for dynamic URL
+let API_BASE_URL = null;
+
+// Initialize API URL from config
+function initializeAPI() {
+    if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.API_BASE_URL) {
+        API_BASE_URL = APP_CONFIG.API_BASE_URL;
+        console.log('✅ API_BASE_URL initialized:', API_BASE_URL);
+    } else {
+        console.error('❌ APP_CONFIG not loaded yet');
+        setTimeout(initializeAPI, 100);
+    }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAPI);
+} else {
+    initializeAPI();
+}
+
 let authToken = localStorage.getItem('authToken');
 
 const datesContainer = document.getElementById("dates");

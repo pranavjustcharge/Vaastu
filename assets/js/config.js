@@ -13,30 +13,35 @@
 function getApiBaseUrl() {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  
+
   // Development environments
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:3000/api';
   }
-  
+
   // Production environments
   // Check for environment variable (set by build process)
   if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   // Check for window variable (set in HTML or build)
   if (window.__API_BASE_URL__) {
     return window.__API_BASE_URL__;
   }
-  
-  // Vercel deployment - use relative path
-  if (hostname.includes('vercel.app') || hostname.includes('yourdomain.com')) {
-    return `${protocol}//api.yourdomain.com/api`;
+
+  // Vercel deployment - use Render backend
+  if (hostname.includes('vercel.app')) {
+    return 'https://vaastu.onrender.com/api';
   }
-  
-  // Default fallback
-  return `${protocol}//${hostname}/api`;
+
+  // Custom domain
+  if (hostname.includes('yourdomain.com')) {
+    return 'https://vaastu.onrender.com/api';
+  }
+
+  // Default fallback - use Render backend
+  return 'https://vaastu.onrender.com/api';
 }
 
 // Detect environment

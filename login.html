@@ -165,6 +165,9 @@
 
     <script src="assets/js/config.js"></script>
     <script>
+        // Get API base URL from config
+        const API_BASE_URL = APP_CONFIG.API_BASE_URL;
+
         // Helper function to show messages
         const showMessage = (message, type = 'info') => {
             console.log(`[${type.toUpperCase()}] ${message}`);
@@ -205,6 +208,10 @@
                 const loginData = isEmail
                     ? { email: loginInput, password }
                     : { username: loginInput, password };
+
+                console.log('API_BASE_URL:', API_BASE_URL);
+                console.log('Login endpoint:', `${API_BASE_URL}/auth/login`);
+                console.log('Login data:', loginData);
 
                 const response = await fetch(`${API_BASE_URL}/auth/login`, {
                     method: 'POST',

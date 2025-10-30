@@ -293,6 +293,29 @@
 
     <script src="assets/js/config.js"></script>
     <script>
+        // Wait for config to load, then get API base URL
+        let API_BASE_URL = null;
+
+        // Function to initialize API URL
+        function initializeAPI() {
+            if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.API_BASE_URL) {
+                API_BASE_URL = APP_CONFIG.API_BASE_URL;
+                console.log('✅ API_BASE_URL initialized:', API_BASE_URL);
+                // Now load dashboard data
+                loadDashboardData();
+            } else {
+                console.error('❌ APP_CONFIG not loaded yet');
+                setTimeout(initializeAPI, 100);
+            }
+        }
+
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAPI);
+        } else {
+            initializeAPI();
+        }
+
         const authToken = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.AUTH_TOKEN);
         const user = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -619,20 +642,23 @@
             loadCommissionSettings();
         }
 
-        // Load all data on page load
-        loadDashboardStats();
-        loadPendingBAs();
-        loadBookings();
-        loadWithdrawals();
-        loadCommissionSettings();
-
-        // Refresh every 30 seconds
-        setInterval(() => {
+        // Load all dashboard data
+        function loadDashboardData() {
+            console.log('📊 Loading dashboard data...');
             loadDashboardStats();
             loadPendingBAs();
             loadBookings();
             loadWithdrawals();
-        }, 30000);
+            loadCommissionSettings();
+
+            // Refresh every 30 seconds
+            setInterval(() => {
+                loadDashboardStats();
+                loadPendingBAs();
+                loadBookings();
+                loadWithdrawals();
+            }, 30000);
+        }
     </script>
 </body>
 </html>

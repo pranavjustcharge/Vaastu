@@ -165,8 +165,26 @@
 
     <script src="assets/js/config.js"></script>
     <script>
-        // Get API base URL from config
-        const API_BASE_URL = APP_CONFIG.API_BASE_URL;
+        // Wait for config to load, then get API base URL
+        let API_BASE_URL = null;
+
+        // Function to initialize API URL
+        function initializeAPI() {
+            if (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.API_BASE_URL) {
+                API_BASE_URL = APP_CONFIG.API_BASE_URL;
+                console.log('✅ API_BASE_URL initialized:', API_BASE_URL);
+            } else {
+                console.error('❌ APP_CONFIG not loaded yet');
+                setTimeout(initializeAPI, 100);
+            }
+        }
+
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAPI);
+        } else {
+            initializeAPI();
+        }
 
         // Helper function to show messages
         const showMessage = (message, type = 'info') => {
@@ -186,6 +204,13 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Check if API_BASE_URL is initialized
+            if (!API_BASE_URL) {
+                console.error('❌ API_BASE_URL not initialized');
+                alert('System is initializing. Please try again in a moment.');
+                return;
+            }
 
             const loginInput = document.getElementById('loginInput').value;
             const password = document.getElementById('password').value;
@@ -209,6 +234,7 @@
                     ? { email: loginInput, password }
                     : { username: loginInput, password };
 
+                console.log('✅ Form submitted');
                 console.log('API_BASE_URL:', API_BASE_URL);
                 console.log('Login endpoint:', `${API_BASE_URL}/auth/login`);
                 console.log('Login data:', loginData);

@@ -462,6 +462,36 @@ a,a:hover,a:focus,a:visited{
     display: inline-flex;
     padding: 0 15px;
 }
+.as_social_links {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    color: #ffffff;
+    font-size: 14px;
+}
+.as_social_links .as_social_label {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.as_social_links a {
+    color: inherit;
+    font-weight: 500;
+}
+.as_social_links a:hover {
+    color: var(--secondary-color);
+}
+.as_social_divider {
+    color: inherit;
+}
+.as_social_links_footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+    color: #ffffff;
+}
 
 .as_info_detail ul li a,.as_info_detail ul li a:focus{
     text-decoration: none;
